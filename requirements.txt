@@ -3,3 +3,4 @@ numpy
 pandas
 opencv-python
 nats-py
+altair==4.0
