@@ -10,6 +10,27 @@ import time
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 import av
 import threading
+import time  
+import plotly.express as px  
+
+##########
+
+dataset_url = "https://raw.githubusercontent.com/Lexie88rus/bank-marketing-analysis/master/bank.csv"
+
+st.set_page_config(
+    page_title="Real-Time Data Science Dashboard",
+    page_icon="✅",
+    layout="wide",
+)
+
+# read csv from a URL
+@st.cache_data
+def get_data() -> pd.DataFrame:
+    return pd.read_csv(dataset_url)
+
+df = get_data()
+
+##########
 
 st.title('Hackathon Team Error404')
 
@@ -41,7 +62,7 @@ def json_decode():
     return msg
 
 # All the new code 
-task = st.sidebar.selectbox("Select Task: ", ("Homepage", "Dashboard", "Messages"))
+task = st.sidebar.selectbox("Select Task: ", ("Homepage", "Live", "Dashboard", "Messages"))
 def get_model(task):
     if task == "Homepage":
         uploaded_file = st.file_uploader("Upload Disease Image")
@@ -50,7 +71,7 @@ def get_model(task):
                 # upload model
                 st.image(uploaded_file)
 
-    if task == "Dashboard":
+    if task == "Live":
         st.write(task)
         # uploaded_file = st.file_uploader("Choose a file")
         # st.image(uploaded_file)
@@ -78,6 +99,76 @@ def get_model(task):
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             stframe.image(gray)
 
+    if task == "Dashboard":
+        st.write(task)
+        # top-level filters
+        job_filter = st.selectbox("Select the Job", pd.unique(df["job"]))
+
+        # creating a single-element container
+        placeholder = st.empty()
+
+        # dataframe filter
+        df = df[df["job"] == job_filter]
+
+        # near real-time / live feed simulation
+        for seconds in range(200):
+
+            df["age_new"] = df["age"] * np.random.choice(range(1, 5))
+            df["balance_new"] = df["balance"] * np.random.choice(range(1, 5))
+
+            # creating KPIs
+            avg_age = np.mean(df["age_new"])
+
+            count_married = int(
+                df[(df["marital"] == "married")]["marital"].count()
+                + np.random.choice(range(1, 30))
+            )
+
+            balance = np.mean(df["balance_new"])
+
+            with placeholder.container():
+
+                # create three columns
+                kpi1, kpi2, kpi3 = st.columns(3)
+
+                # fill in those three columns with respective metrics or KPIs
+                kpi1.metric(
+                    label="Age ⏳",
+                    value=round(avg_age),
+                    delta=round(avg_age) - 10,
+                )
+                
+                kpi2.metric(
+                    label="Married Count 💍",
+                    value=int(count_married),
+                    delta=-10 + count_married,
+                )
+                
+                kpi3.metric(
+                    label="A/C Balance ＄",
+                    value=f"$ {round(balance,2)} ",
+                    delta=-round(balance / count_married) * 100,
+                )
+
+                # create two columns for charts
+                fig_col1, fig_col2 = st.columns(2)
+                with fig_col1:
+                    st.markdown("### First Chart")
+                    fig = px.density_heatmap(
+                        data_frame=df, y="age_new", x="marital"
+                    )
+                    st.write(fig)
+                    
+                with fig_col2:
+                    st.markdown("### Second Chart")
+                    fig2 = px.histogram(data_frame=df, x="age_new")
+                    st.write(fig2)
+
+                st.markdown("### Detailed Data View")
+                st.dataframe(df)
+                time.sleep(1)
+        
+    
     if task == "Messages":
         st.write(task)
         asyncio.run(messages())
