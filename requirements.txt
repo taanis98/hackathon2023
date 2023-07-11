@@ -3,5 +3,3 @@ numpy
 pandas
 opencv-python
 nats-py
-av
-threading
